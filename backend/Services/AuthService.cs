@@ -12,8 +12,7 @@ public class AuthService : IAuthService
     private readonly IConfiguration _config;
 
     public AuthService(DbaContext ctx, IConfiguration config) {
-        _ctx = ctx;
-        _config = config;
+        _ctx = ctx; _config = config;
     }
 
 
@@ -43,7 +42,7 @@ public class AuthService : IAuthService
     }
 
 
-    public async Task<string> logUser(LoginDto dto) {
+    public async Task<(long, string)> logUser(LoginDto dto) {
         Utilisateur user = await this.getUserByLogin(dto);
 
         if(user != null) {
@@ -61,7 +60,7 @@ public class AuthService : IAuthService
             await _ctx.Sessions.AddAsync(tempSession);
                     
             await _ctx.SaveChangesAsync();
-            return token;
+            return (user.id, token);
         }
         
         throw new ArgumentException("Email ou mot de passe incorrect !");

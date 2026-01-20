@@ -33,8 +33,8 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
         try {
-            string token = await service.logUser(dto);
-            return Ok(ResponseApi.Ok("Connexion réussie", new { token }));
+            var (userId, token) = await service.logUser(dto);
+            return Ok(ResponseApi.Ok("Connexion réussie", new { userId, token }));
         }
         catch (ArgumentException ex)
         {
