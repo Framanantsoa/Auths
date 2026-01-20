@@ -6,7 +6,7 @@ namespace Services;
 public interface IAuthService
 {
     Task<Utilisateur> registerUser(RegisterDto dto);
-    Task<string> logUser(LoginDto dto);
+    Task<(long, string)> logUser(LoginDto dto);
     Task<bool> isAuthenticated(string token);
     Task logoutUser(string token);
     Task refreshToken(string token);
