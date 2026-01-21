@@ -6,25 +6,22 @@ using Utils;
 
 namespace Services;
 
-public class AuthService : IAuthService
+public class AuthService(DbaContext ctx, IConfiguration config, 
+ ILogger<AuthService> log) : IAuthService
 {
-    private readonly DbaContext _ctx;
-    private readonly IConfiguration _config;
-
-    public AuthService(DbaContext ctx, IConfiguration config) {
-        _ctx = ctx;
-        _config = config;
-    }
+    private readonly DbaContext _ctx = ctx;
+    private readonly IConfiguration _config = config;
+    private readonly ILogger<AuthService> _logger = log;
 
 
     public async Task<Utilisateur> registerUser(RegisterDto dto) {
-        Utilisateur usr = new Utilisateur {
-            nom = dto.nom.ToUpper(),
-            prenom = dto.prenom,
-            genre = await _ctx.Genres.FindAsync(dto.idGenre),
-            naissance = dto.naissance,
-            email = dto.email,
-            motDePasse = BCrypt.Net.BCrypt.HashPassword(dto.motDePasse)
+        Utilisateur usr = new() {
+            Nom = dto.Nom.ToUpper(),
+            Prenom = dto.Prenom,
+            Genre = await _ctx.Genres.FindAsync(dto.IdGenre),
+            Naissance = dto.Naissance,
+            Email = dto.Email,
+            MotDePasse = BCrypt.Net.BCrypt.HashPassword(dto.MotDePasse)
         };
         await _ctx.Utilisateurs.AddAsync(usr);
         await _ctx.SaveChangesAsync();
@@ -35,69 +32,71 @@ public class AuthService : IAuthService
 
     public async Task<Utilisateur> getUserByLogin(LoginDto dto) {
         Utilisateur usr = await _ctx.Utilisateurs.FirstOrDefaultAsync(u =>
-            u.email==dto.email);
+            u.Email==dto.Email);
         if(usr != null &&
-         BCrypt.Net.BCrypt.Verify(dto.motDePasse, usr.motDePasse)) return usr;
+         BCrypt.Net.BCrypt.Verify(dto.MotDePasse, usr.MotDePasse)) return usr;
         
         return null;
     }
 
 
-    public async Task<string> logUser(LoginDto dto) {
+    public async Task<(long, string)> logUser(LoginDto dto) {
         Utilisateur user = await this.getUserByLogin(dto);
 
         if(user != null) {
             int sessionTime = _config.GetValue<int>("SessionTime");
-            string token = Guid.NewGuid().ToString();
+            string Token = Guid.NewGuid().ToString();
 
             Session tempSession = new Session {
-                dateDebut = DateTime.UtcNow,
-                expiration = DateTime.UtcNow.AddMinutes(sessionTime),
-                token = token,
-                utilisateur = user
+                DateDebut = DateTime.UtcNow,
+                Expiration = DateTime.UtcNow.AddMinutes(sessionTime),
+                Token = Token,
+                Utilisateur = user
             };
 
-        // Ajouter la session de l'utilisateur
+        // Ajouter la session de l'Utilisateur
             await _ctx.Sessions.AddAsync(tempSession);
                     
             await _ctx.SaveChangesAsync();
-            return token;
+            return (user.Id, Token);
         }
         
         throw new ArgumentException("Email ou mot de passe incorrect !");
     }
 
 
-    public async Task<bool> isAuthenticated(string token) {
+    public async Task<bool> isAuthenticated(string Token) {
+        _logger.LogInformation($"Token : {Token}; {DateTime.UtcNow}");
+
         return await _ctx.Sessions.AnyAsync(s => 
-            s.token == token && s.expiration >= DateTime.UtcNow
+            s.Token == Token && s.Expiration >= DateTime.UtcNow
         );
     }
 
 
-    public async Task logoutUser(string token) {
-        if(await this.isAuthenticated(token) == false) {
+    public async Task logoutUser(string Token) {
+        if(await this.isAuthenticated(Token) == false) {
            throw new ArgumentException("Token manquant ou éxpiré !");
         }
 
         Session session = await _ctx.Sessions.FirstOrDefaultAsync(s => 
-            s.token == token
+            s.Token == Token
         );
 
-        session.expiration = DateTime.UtcNow;
+        session.Expiration = DateTime.UtcNow;
         await _ctx.SaveChangesAsync();
     }
    
 
-    public async Task refreshToken(string token) {
-        if(await this.isAuthenticated(token) == false) {
+    public async Task refreshToken(string Token) {
+        if(await this.isAuthenticated(Token) == false) {
            throw new ArgumentException("Token manquant ou éxpiré !");
         }
 
-        Session session = await _ctx.Sessions.Include(s => s.utilisateur)
-            .FirstOrDefaultAsync(s => s.token == token
+        Session session = await _ctx.Sessions.Include(s => s.Utilisateur)
+            .FirstOrDefaultAsync(s => s.Token == Token
         );
-        session.expiration = DateTime.UtcNow.AddMinutes(
+        session.Expiration = DateTime.UtcNow.AddMinutes(
             _config.GetValue<int>("SessionTime")
         );
 
@@ -105,63 +104,67 @@ public class AuthService : IAuthService
     }
 
 
-    public async Task<Utilisateur> getUserByToken(string token) {
-        if(!await this.isAuthenticated(token))
+    public async Task<Utilisateur> getUserByToken(string Token) {
+        if(!await this.isAuthenticated(Token))
             throw new ArgumentException("Token manquant ou expiré !");
 
-        // Charger session + utilisateur
+        // Charger session + Utilisateur
         Session session = await _ctx.Sessions
-            .Include(s => s.utilisateur)
-            .FirstOrDefaultAsync(s => s.token == token);
+            .Include(s => s.Utilisateur)
+            .FirstOrDefaultAsync(s => s.Token == Token);
         
-        if (session == null || session.utilisateur == null)
-            throw new ArgumentException("Session ou utilisateur introuvable !");
+        if (session == null || session.Utilisateur == null)
+            throw new ArgumentException("Session ou Utilisateur introuvable !");
 
-        return session.utilisateur;
+        return session.Utilisateur;
     }
 
 
     public async Task<PersoInfoDto> getPersonnalInformations(string token) {
         Utilisateur user = await this.getUserByToken(token);
 
-        string query = @"
-            SELECT u.nom, u.prenom, u.email, u.naissance, g.nom_genre AS genre
+        string sql = """
+            SELECT
+                u.nom        AS "Nom",
+                u.prenom     AS "Prenom",
+                u.naissance  AS "Naissance",
+                u.email      AS "Email",
+                g.nom_genre  AS "Genre"
             FROM utilisateurs u
             LEFT JOIN genres g ON u.id_genre = g.id_genre
-            WHERE u.id_utilisateur = @arg1 ORDER BY u.id_utilisateur
-        ";
-        var param = new NpgsqlParameter("@arg1", user.id);
+            WHERE u.id_utilisateur = @id
+            """;
 
-        PersoInfoDto infoDto = await _ctx.Database
-            .SqlQueryRaw<PersoInfoDto>(query, param)
-            .FirstOrDefaultAsync();
+        var param = new NpgsqlParameter("@id", user.Id);
 
-        if(infoDto == null)
-            throw new InvalidOperationException("Informations personnelles introuvables");
-
-        return infoDto;
+        return await _ctx.Database
+            .SqlQueryRaw<PersoInfoDto>(sql, param)
+            .AsNoTracking()
+            .FirstOrDefaultAsync()
+            ?? throw new ArgumentException("Informations personnelles introuvables");
     }
 
 
-    public async Task updateUserInformations(string token, InfoUpdateDto dto) {
+    public async Task<long> updateUserInformations(string token, InfoUpdateDto dto) {
         Utilisateur user = await this.getUserByToken(token);
     
     // Vérifier l'ancien mot de passe
         LoginDto login = new LoginDto {
-            email = user.email, motDePasse = dto.motDePasse
+            Email = user.Email, MotDePasse = dto.MotDePasse
         };
 
-        string mdp = dto.nouveauMotDePasse!=null ? dto.nouveauMotDePasse:dto.motDePasse;
+        string mdp = dto.NouveauMotDePasse!=null ? dto.NouveauMotDePasse:dto.MotDePasse;
 
         if(user == await this.getUserByLogin(login)) {
-            user.nom = dto.nom.ToUpper();
-            user.prenom = dto.prenom;
-            user.email = dto.email;
-            user.motDePasse = BCrypt.Net.BCrypt.HashPassword(mdp);
-            user.naissance = dto.naissance;
-            user.genre = await _ctx.Genres.FindAsync(dto.idGenre);
+            user.Nom = dto.Nom.ToUpper();
+            user.Prenom = dto.Prenom;
+            user.Email = dto.Email;
+            user.MotDePasse = BCrypt.Net.BCrypt.HashPassword(mdp);
+            user.Naissance = dto.Naissance;
+            user.Genre = await _ctx.Genres.FindAsync(dto.IdGenre);
 
-            await _ctx.SaveChangesAsync(); return;
+            await _ctx.SaveChangesAsync(); 
+            return user.Id;
         }
         throw new ArgumentException("Ancien mot de passe incorrect");
     }

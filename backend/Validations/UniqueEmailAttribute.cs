@@ -14,7 +14,7 @@ public class UniqueEmailAttribute : ValidationAttribute
 
         var email = value.ToString();
         if(!string.IsNullOrEmpty(email)) {
-            bool exists = _context.Utilisateurs.Any(u => u.email == email);
+            bool exists = _context.Utilisateurs.Any(u => u.Email == email);
             if (exists) {
                 return new ValidationResult("Cet email est déjà utilisé.");
             }

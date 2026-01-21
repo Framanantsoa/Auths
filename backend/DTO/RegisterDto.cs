@@ -5,10 +5,10 @@ namespace DTO;
 
 public class RegisterDto : UserInfoDto
 {
-    public DateOnly? naissance {get; set;}
+    public DateOnly? Naissance {get; set;}
 
     [Required(ErrorMessage = "L'email est obligatoire.")]
     [EmailAddress(ErrorMessage = "L'addresse e-mail est incorrect.")]
     [UniqueEmail]
-    public string email {get; set;}
+    public string Email {get; set;}
 }

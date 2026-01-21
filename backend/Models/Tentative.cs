@@ -8,10 +8,15 @@ public class Tentative
 {
     [Key]
     [Column("id_tentative")]
-    public long id { get; set; }
+    public long Id { get; set; }
 
-    public long restant { get; set; }
+    [Column("restant")]
+    public long Restant { get; set; }
 
-    [ForeignKey("id_session")]
-    public Session session { get; set; }
+
+    [Column("id_session")]
+    public long SessionId { get; set; }
+
+    [ForeignKey(nameof(SessionId))]
+    public Session Session { get; set; }
 }

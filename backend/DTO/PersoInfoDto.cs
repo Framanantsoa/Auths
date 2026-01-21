@@ -2,9 +2,9 @@ namespace DTO;
 
 public class PersoInfoDto
 {
-    public string nom { get; set; }
-    public string prenom { get; set; }
-    public string email { get; set; }
-    public string genre { get; set; }
-    public DateOnly? naissance { get; set; }
+    public string Nom { get; set; }
+    public string Prenom { get; set; }
+    public string Email { get; set; }
+    public string Genre { get; set; }
+    public DateOnly? Naissance { get; set; }
 }
