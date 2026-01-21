@@ -6,15 +6,15 @@ namespace DTO;
 public class UserInfoDto
 {
     [Required(ErrorMessage = "Le nom est obligatoire.")]
-    public string nom {get; set;}
+    public string Nom {get; set;}
 
     [Required(ErrorMessage = "Le prénom est obligatoire.")]
-    public string prenom {get; set;}
+    public string Prenom {get; set;}
 
     [Required(ErrorMessage = "Le mot de passe est obligatoire.")]
-    public string motDePasse {get; set;}
+    public string MotDePasse {get; set;}
 
     [Required(ErrorMessage = "Le genre est obligatoire.")]
     [ExistingGender]
-    public long? idGenre {get; set;}
+    public long? IdGenre {get; set;}
 }

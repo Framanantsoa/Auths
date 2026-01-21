@@ -25,7 +25,7 @@ public class AuthController : ControllerBase
 
         Utilisateur user = await service.registerUser(dto);
 
-        return Ok(ResponseApi.Ok("Utilisateur créé", new { user.id, user.nom }));
+        return Ok(ResponseApi.Ok("Utilisateur créé", new { user.Id, user.Nom }));
     }
 
 // ---------- LOGIN ----------
@@ -112,8 +112,8 @@ public class AuthController : ControllerBase
         try {
             string token = GetToken();
 
-            await service.updateUserInformations(token, dto);
-            return Ok(ResponseApi.Ok("Profil mis à jour", new { dto.email }));
+            long userId = await service.updateUserInformations(token, dto);
+            return Ok(ResponseApi.Ok("Profil mis à jour", new { userId }));
         }
         catch (ArgumentException ex)
         {

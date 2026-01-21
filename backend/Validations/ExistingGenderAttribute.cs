@@ -14,7 +14,7 @@ public class ExistingGenderAttribute : ValidationAttribute
         var _context = (DbaContext)validationContext.GetService(typeof(DbaContext));
 
         if (value is long idGenre) {
-            bool exists = _context.Genres.Any(g => g.id==idGenre);
+            bool exists = _context.Genres.Any(g => g.Id==idGenre);
             if (!exists) {
                 return new ValidationResult("Le genre spécifié n'existe pas.");
             }

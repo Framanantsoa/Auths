@@ -6,8 +6,8 @@ public class InfoUpdateDto : UserInfoDto
 {
     [Required(ErrorMessage = "L'email est obligatoire.")]
     [EmailAddress(ErrorMessage = "L'addresse e-mail est incorrect.")]
-    public string email {get; set;}
+    public string Email {get; set;}
 
-    public DateOnly? naissance {get; set;}
-    public string nouveauMotDePasse { get; set; }
+    public DateOnly? Naissance {get; set;}
+    public string NouveauMotDePasse { get; set; }
 }

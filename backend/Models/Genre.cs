@@ -8,8 +8,8 @@ public class Genre
 {
     [Key]
     [Column("id_genre")]
-    public long id { get; set; }
+    public long Id { get; set; }
 
     [Column("nom_genre")]
-    public string nom { get; set; }
+    public string Nom { get; set; }
 }

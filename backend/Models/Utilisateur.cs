@@ -8,19 +8,27 @@ public class Utilisateur
 {
     [Key]
     [Column("id_utilisateur")]
-    public long id { get; set; }
+    public long Id { get; set; }
 
-    public string nom { get; set; }
+    [Column("nom")]
+    public string Nom { get; set; }
 
-    public string prenom { get; set; }
+    [Column("prenom")]
+    public string Prenom { get; set; }
 
-    public DateOnly? naissance { get; set; }
+    [Column("naissance")]
+    public DateOnly? Naissance { get; set; }
 
-    public string email { get; set; }
+    [Column("email")]
+    public string Email { get; set; }
 
     [Column("mot_de_passe")]
-    public string motDePasse { get; set; }
+    public string MotDePasse { get; set; }
 
-    [ForeignKey("id_genre")]
-    public Genre genre { get; set; }
+
+    [Column("id_genre")]
+    public long IdGenre { get; set; }
+
+    [ForeignKey(nameof(IdGenre))]
+    public Genre Genre { get; set; }
 }

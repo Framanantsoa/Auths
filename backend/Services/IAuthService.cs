@@ -13,6 +13,6 @@ public interface IAuthService
     Task<PersoInfoDto> getPersonnalInformations(string token);
 
     Task<Utilisateur> getUserByToken(string token);
-    Task updateUserInformations(string token, InfoUpdateDto dto);
+    Task<long> updateUserInformations(string token, InfoUpdateDto dto);
     Task<Utilisateur> getUserByLogin(LoginDto dto);
 }
